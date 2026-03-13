@@ -64,7 +64,7 @@ def parse_args():
     args = parse.parse_args()
     
     # Leemos los parametros del JSON
-    with open('clasificador.json') as json_file:
+    with open('configuration.json') as json_file:
         config = json.load(json_file)
     
     # Juntamos todo en una variable
@@ -133,16 +133,20 @@ def process_missing_values(numerical_feature, categorical_feature):
     Procesa los valores faltantes en los datos según la estrategia especificada en los argumentos.
 
     Args:
-        numerical_feature (DataFrame): El DataFrame que contiene las características numéricas.
-        categorical_feature (DataFrame): El DataFrame que contiene las características categóricas.
+        numerical_feature (DataFrame): El DataFrame que contiene las características numéricas. Se sustituirá por la media.
+        categorical_feature (DataFrame): El DataFrame que contiene las características categóricas. Se sustituirá por la moda.
 
     Returns:
         None
 
-    Raises:
-        None
     """
-#TODO aqui lo que hayais hecho
+    # Numericos
+    for column in numerical_feature.columns:
+        data[column].fillna(data[column].mean())
+
+    #Categoriales
+    for column in categorical_feature.columns:
+        data[column].fillna(data[column].mode()[0])
 
 def reescaler(numerical_feature):
     """
@@ -158,7 +162,15 @@ def reescaler(numerical_feature):
         Exception: Si hay un error al reescalar los datos.
 
     """
-#TODO aqui reescalar
+    if config["preprocessing"]["scaling"] == "standard":
+        scaler = StandardScaler()
+        numerical_feature = scaler.fit_transform(numerical_feature)
+    elif config["preprocessing"]["scaling"] == "minmax":
+        scaler = MinMaxScaler()
+        numerical_feature = scaler.fit_transform(numerical_feature)
+    else:
+        print("Valor de scaling incorrecto en el JSON.")
+        sys.exit(1)
 
 def cat2num(categorical_feature):
     """
@@ -168,7 +180,11 @@ def cat2num(categorical_feature):
     categorical_feature (DataFrame): El DataFrame que contiene las características categóricas a convertir.
 
     """
-#TODO aqui lo que haga falta para pasar de categorial a numerico
+    le = LabelEncoder()
+    if categorical_feature.columns.size > 0: # Si hay alguna columna categórica
+        for column in categorical_feature.columns:
+            data[column] = le.fit_transform(data[column]) # Convertir a numérico con LabelEncoder
+
 
 def simplify_text(text_feature):
     """

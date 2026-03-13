@@ -1,0 +1,5 @@
+{
+    "preprocessing": {
+        "scaling": "standard"
+    }
+}
