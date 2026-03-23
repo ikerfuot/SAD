@@ -235,7 +235,7 @@ def process_text(text_feature):
 
 def over_under_sampling():
     """
-    Realiza oversampling o undersampling en los datos según la estrategia especificada en args.preprocessing["sampling"].
+    Real2Siza 34sampling o undersampling en los datos según la estrategia especificada en args.preprocessing["sampling"].
     
     Args:
         None
