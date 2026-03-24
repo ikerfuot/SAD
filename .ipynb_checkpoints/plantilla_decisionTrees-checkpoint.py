@@ -64,7 +64,7 @@ def parse_args():
     args = parse.parse_args()
     
     # Leemos los parametros del JSON
-    with open('configuration.json') as json_file:
+    with open('clasificador.json') as json_file:
         config = json.load(json_file)
     
     # Juntamos todo en una variable
@@ -133,20 +133,16 @@ def process_missing_values(numerical_feature, categorical_feature):
     Procesa los valores faltantes en los datos según la estrategia especificada en los argumentos.
 
     Args:
-        numerical_feature (DataFrame): El DataFrame que contiene las características numéricas. Se sustituirá por la media.
-        categorical_feature (DataFrame): El DataFrame que contiene las características categóricas. Se sustituirá por la moda.
+        numerical_feature (DataFrame): El DataFrame que contiene las características numéricas.
+        categorical_feature (DataFrame): El DataFrame que contiene las características categóricas.
 
     Returns:
         None
 
+    Raises:
+        None
     """
-    # Numericos
-    for column in numerical_feature.columns:
-        data[column].fillna(data[column].mean())
-
-    #Categoriales
-    for column in categorical_feature.columns:
-        data[column].fillna(data[column].mode()[0])
+#TODO aqui lo que hayais hecho
 
 def reescaler(numerical_feature):
     """
@@ -162,15 +158,7 @@ def reescaler(numerical_feature):
         Exception: Si hay un error al reescalar los datos.
 
     """
-    if config["preprocessing"]["scaling"] == "standard":
-        scaler = StandardScaler()
-        numerical_feature = scaler.fit_transform(numerical_feature)
-    elif config["preprocessing"]["scaling"] == "minmax":
-        scaler = MinMaxScaler()
-        numerical_feature = scaler.fit_transform(numerical_feature)
-    else:
-        print("Valor de scaling incorrecto en el JSON.")
-        sys.exit(1)
+#TODO aqui reescalar
 
 def cat2num(categorical_feature):
     """
@@ -180,11 +168,7 @@ def cat2num(categorical_feature):
     categorical_feature (DataFrame): El DataFrame que contiene las características categóricas a convertir.
 
     """
-    le = LabelEncoder()
-    if categorical_feature.columns.size > 0: # Si hay alguna columna categórica
-        for column in categorical_feature.columns:
-            data[column] = le.fit_transform(data[column]) # Convertir a numérico con LabelEncoder
-
+#TODO aqui lo que haga falta para pasar de categorial a numerico
 
 def simplify_text(text_feature):
     """
@@ -235,7 +219,7 @@ def process_text(text_feature):
 
 def over_under_sampling():
     """
-    Real2Siza 34sampling o undersampling en los datos según la estrategia especificada en args.preprocessing["sampling"].
+    Realiza oversampling o undersampling en los datos según la estrategia especificada en args.preprocessing["sampling"].
     
     Args:
         None
@@ -419,35 +403,10 @@ def decision_tree():
     """
     # Dividimos los datos en entrenamiento y dev
     x_train, x_dev, y_train, y_dev = divide_data()
-
-    param_grid = {
-        'max_depth': args.decision_tree.get('max_depth'),
-        'min_samples_split': args.decision_tree.get('min_samples_split'),
-        'criterion': args.decision_tree.get('criterion'),
-        'min_impurity_decrease': args.decision_tree.get('threshold_IG', [0.0]), 
-        'min_samples_leaf': args.decision_tree.get('min_samples_leaf', [1]),
-        'ccp_alpha': args.decision_tree.get('ccp_alpha', [0.0])
-    }
     
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
         #TODO Llamar al decision trees
-        # Inicializamos el clasificador base
-        dt_clf = DecisionTreeClassifier(random_state=42)
-        
-        # GridSearchCV utiliza x_train para entrenar y hace validación cruzada interna
-        gs = GridSearchCV(
-            estimator=dt_clf,
-            param_grid=param_grid,
-            cv=5,
-            n_jobs=args.cpu,
-            scoring=args.estimator,
-            verbose=0
-        )
-        
-        start_time = time.time()
-        gs.fit(x_train, y_train)
-        end_time = time.time()
         #gs = GridSearchCV(
    
     execution_time = end_time - start_time
