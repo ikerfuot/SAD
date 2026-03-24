@@ -26,6 +26,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
+from sklearn.naive_bayes import MultinomialNB
 # Nltk
 import nltk
 from nltk.corpus import stopwords
@@ -449,6 +450,41 @@ def random_forest(x_train, x_dev, y_train, y_dev):
 
 # Funciones para predecir con un modelo
 
+def naive_bayes(x_train, x_dev, y_train, y_dev):
+    """
+    Función que entrena un modelo de Naive Bayes utilizando GridSearchCV para encontrar los mejores hiperparámetros.
+    """
+    print(Fore.YELLOW + "\nProcesando Naive Bayes (GridSearchCV)..." + Fore.RESET)
+
+    # --- VALIDACIÓN DE SEGURIDAD ---
+    # MultinomialNB no acepta valores negativos. 
+    # Si detectamos valores < 0, re-escalamos a [0, 1] automáticamente.
+    if (x_train < 0).any():
+        print(Fore.CYAN + "Nota: Detectados valores negativos. Re-escalando a [0, 1] para Naive Bayes..." + Fore.RESET)
+        scaler = MinMaxScaler()
+        x_train = scaler.fit_transform(x_train)
+        x_dev = scaler.transform(x_dev)
+    # -------------------------------
+    
+    # Intentamos leer args.naive_bayes. Si no existe, devuelve {}
+    param_grid = getattr(args, 'naive_bayes', {"alpha": [1.0], "fit_prior": [True, False]})
+    
+    nb_clf = MultinomialNB()
+    gs = GridSearchCV(estimator=nb_clf, param_grid=param_grid, cv=5, n_jobs=args.cpu, scoring=args.estimator)
+    
+    start_time = time.time()
+    gs.fit(x_train, y_train)
+    end_time = time.time()
+    
+    execution_time = end_time - start_time
+    print("Tiempo de ejecución:"+Fore.MAGENTA, execution_time,Fore.RESET+ "segundos")
+    
+    # Mostramos los resultados
+    mostrar_resultados(gs, x_dev, y_dev)
+    
+    # Guardamos el modelo utilizando pickle
+    save_model(gs)
+
 def load_model():
     """
     Carga el modelo desde el archivo 'output/modelo.pkl' y lo devuelve.
@@ -543,6 +579,13 @@ if __name__ == "__main__":
                 try:
                     random_forest(x_train, x_dev, y_train, y_dev)
                     print(Fore.GREEN+"Algoritmo random forest ejecutado con éxito"+Fore.RESET)
+                    sys.exit(0)
+                except Exception as e:
+                    print(e)
+            elif args.algorithm == "naive_bayes":
+                try:
+                    naive_bayes(x_train, x_dev, y_train, y_dev)
+                    print(Fore.GREEN+"Algoritmo naive bayes ejecutado con éxito"+Fore.RESET)
                     sys.exit(0)
                 except Exception as e:
                     print(e)

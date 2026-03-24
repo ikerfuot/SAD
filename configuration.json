@@ -82,5 +82,18 @@
             "gini",
             "entropy"
         ]
+    },
+    "naive_bayes": {
+        "alpha": [
+            0.01,
+            0.1,
+            0.5,
+            1.0,
+            2.0
+        ],
+        "fit_prior": [
+            true,
+            false
+        ]
     }
 }
