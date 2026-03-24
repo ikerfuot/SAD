@@ -47,7 +47,7 @@ python plantilla.py -m train -f penguins.csv -p sex -a kNN -v
 
 ### Ejemplo 2: Fase de Evaluación Definitiva (test)
 
-En este modo se simula la evaluación final de la profesora. Se asume que el archivo CSV pasado es ciego. El script no divide ni entrena nada; simplemente carga el modelo previamente guardado, preprocesa el nuevo archivo y escupe las predicciones.
+El script no divide ni entrena nada; simplemente carga el modelo previamente guardado, preprocesa el nuevo archivo e imprime las predicciones.
 
 python plantilla.py -m test -f penguins_test_secreto.csv -p sex -a kNN
 
