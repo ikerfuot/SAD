@@ -1,6 +1,7 @@
-scikit-learn
-numpy
-pandas
-imblearn
-nltk
-colorama
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.2.0
+nltk>=3.8.0
+imbalanced-learn>=0.10.0
+colorama>=0.4.6
+tqdm>=4.65.0
