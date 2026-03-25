@@ -26,7 +26,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 # Nltk
 import nltk
 from nltk.corpus import stopwords
@@ -311,6 +311,20 @@ def preprocesar_datos():
     X_train, X_dev = process_missing_values(X_train, X_dev)
     X_train, X_dev = cat2num(X_train, X_dev)
     X_train, X_dev = process_text(X_train, X_dev)
+    # 1. Ajuste inteligente del escalado
+    tipo_escalado = args.preprocessing.get("scaling", "none")
+    algoritmo = args.algorithm
+    if algoritmo == "naive_bayes":
+        nb_type = args.naive_bayes.get("type", "multinomial")
+        if nb_type != "gaussian":
+            # Forzamos MinMax aunque en el JSON diga Standard
+            tipo_escalado = "minmax" 
+            print(Fore.CYAN + "> Ajuste: Usando MinMax para Naive Bayes." + Fore.RESET)
+
+    elif algoritmo == "kNN" and tipo_escalado == "none":
+        # kNN es inútil sin escalar
+        tipo_escalado = "standard"
+        print(Fore.YELLOW + "> Aviso: kNN requiere escalado. Aplicando Standard." + Fore.RESET)
     X_train, X_dev = reescaler(X_train, X_dev)
     
     return X_train.values, X_dev.values, y_train.values, y_dev.values
@@ -457,7 +471,7 @@ def naive_bayes(x_train, x_dev, y_train, y_dev):
     print(Fore.YELLOW + "\nProcesando Naive Bayes (GridSearchCV)..." + Fore.RESET)
 
     # --- VALIDACIÓN DE SEGURIDAD ---
-    # MultinomialNB no acepta valores negativos. 
+    # MultinomialNB y BernoulliNB no aceptan valores negativos. 
     # Si detectamos valores < 0, re-escalamos a [0, 1] automáticamente.
     if (x_train < 0).any():
         print(Fore.CYAN + "Nota: Detectados valores negativos. Re-escalando a [0, 1] para Naive Bayes..." + Fore.RESET)
@@ -467,9 +481,21 @@ def naive_bayes(x_train, x_dev, y_train, y_dev):
     # -------------------------------
     
     # Intentamos leer args.naive_bayes. Si no existe, devuelve {}
-    param_grid = getattr(args, 'naive_bayes', {"alpha": [1.0], "fit_prior": [True, False]})
+    nb_type = args.naive_bayes.get("type", "multinomial")
     
-    nb_clf = MultinomialNB()
+    if nb_type == "gaussian":
+        nb_clf = GaussianNB()
+        param_grid = {"var_smoothing": args.naive_bayes.get("var_smoothing", [1e-9])}
+    elif nb_type == "bernoulli":
+        nb_clf = BernoulliNB()
+        param_grid = {"alpha": args.naive_bayes.get("alpha", [1.0]), "binarize": args.naive_bayes.get("binarize", [0.0])}
+    elif nb_type == "multinomial":
+        nb_clf = MultinomialNB()
+        param_grid = {"alpha": args.naive_bayes.get("alpha", [1.0]), "fit_prior": [True, False]}
+    else:
+        print(Fore.RED+"Tipo de Naive Bayes no soportado"+Fore.RESET)
+        sys.exit(1)
+    
     gs = GridSearchCV(estimator=nb_clf, param_grid=param_grid, cv=5, n_jobs=args.cpu, scoring=args.estimator)
     
     start_time = time.time()

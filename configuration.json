@@ -3,7 +3,7 @@
         "scaling": "standard",
         "text_process": "tf-idf",
         "language": "english",
-        "imbalance_threshold": 0.20,
+        "imbalance_threshold": 20.0,
         "test_size": 0.15,
         "dev_size": 0.15,
         "unique_category_threshold": 10,
@@ -84,6 +84,7 @@
         ]
     },
     "naive_bayes": {
+        "type": "multinomial",
         "alpha": [
             0.01,
             0.1,
@@ -94,6 +95,16 @@
         "fit_prior": [
             true,
             false
+        ],
+        "var_smoothing": [
+            1e-9,
+            1e-8,
+            1e-7
+        ],
+        "binarize": [
+            0.0,
+            0.5,
+            1.0
         ]
     }
 }
