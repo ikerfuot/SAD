@@ -84,7 +84,7 @@
         ]
     },
     "naive_bayes": {
-        "type": "multinomial",
+        "type": "bernoulli",
         "alpha": [
             0.01,
             0.1,

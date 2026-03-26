@@ -172,7 +172,21 @@ def reescaler(X_train, X_dev):
     num_cols = select_features(X_train)[0].columns
     if len(num_cols) == 0: return X_train, X_dev
     
+     # 1. Ajuste inteligente del escalado
     scaling = args.preprocessing.get("scaling", "standard")
+    algoritmo = args.algorithm
+    if algoritmo == "naive_bayes":
+        nb_type = args.naive_bayes.get("type", "multinomial")
+        if nb_type != "gaussian":
+            # Forzamos MinMax aunque en el JSON diga Standard
+            scaling = "minmax" 
+            print(Fore.CYAN + "> Ajuste: Usando MinMax para Naive Bayes." + Fore.RESET)
+
+    elif algoritmo == "kNN" and scaling == "none":
+        # kNN es inútil sin escalar
+        scaling = "standard"
+        print(Fore.YELLOW + "> Aviso: kNN requiere escalado. Aplicando Standard." + Fore.RESET)
+
     if scaling == "standard":
         scaler = StandardScaler()
     elif scaling == "minmax":
@@ -180,9 +194,18 @@ def reescaler(X_train, X_dev):
     else:
         return X_train, X_dev
         
-    X_train.loc[:, num_cols] = scaler.fit_transform(X_train[num_cols])
-    X_dev.loc[:, num_cols] = scaler.transform(X_dev[num_cols])
+    scaled_train = scaler.fit_transform(X_train[num_cols])
+    for i, col in enumerate(num_cols):
+        X_train[col] = scaled_train[:, i]
+        
+    # 4. Transformación de DEV
+    scaled_dev = scaler.transform(X_dev[num_cols])
+    for i, col in enumerate(num_cols):
+        X_dev[col] = scaled_dev[:, i]
     
+    # 5. Guardamos el objeto para el test.py
+    if not os.path.exists('output'):
+        os.makedirs('output')
     with open('output/scaler.pkl', 'wb') as f:
         pickle.dump(scaler, f)
         
@@ -192,24 +215,37 @@ def cat2num(X_train, X_dev):
     """
     Convierte categóricas a numéricas. Fit en Train, Transform en Train y Dev.
     """
+    # Obtenemos las columnas categóricas
     cat_cols = select_features(X_train)[2].columns
-    if len(cat_cols) == 0: return X_train, X_dev
-    encoders = {} 
+    if len(cat_cols) == 0:
+        return X_train, X_dev
+    
+    encoders = {}
     
     for col in cat_cols:
         le = LabelEncoder()
-        # Ajustamos y transformamos el entrenamiento 
-        X_train.loc[:, col] = le.fit_transform(X_train[col].astype(str))
         
-        # Manejamos etiquetas desconocidas en el dev 
-        X_dev.loc[:, col] = X_dev[col].map(lambda s: s if s in le.classes_ else '<unknown>')
-        le.classes_ = np.append(le.classes_, '<unknown>')
-        X_dev.loc[:, col] = le.transform(X_dev[col].astype(str))
+        # 1. Ajustamos y transformamos Train
+        # Usamos X_train[col] directo en lugar de .loc para permitir el cambio de tipo de str a int
+        X_train[col] = le.fit_transform(X_train[col].astype(str))
         
-        # 2. Guardamos el encoder de ESTA columna en el diccionario 
+        # 2. Manejamos etiquetas desconocidas en Dev
+        # Si aparece una categoría en Dev que no estaba en Train, la marcamos como <unknown>
+        X_dev[col] = X_dev[col].astype(str).map(lambda s: s if s in le.classes_ else '<unknown>')
+        
+        # 3. Añadimos <unknown> a las clases del encoder para que no explote
+        if '<unknown>' not in le.classes_:
+            le.classes_ = np.append(le.classes_, '<unknown>')
+            
+        # 4. Transformamos Dev
+        X_dev[col] = le.transform(X_dev[col].astype(str))
+        
+        # Guardamos el encoder para el test.py
         encoders[col] = le
-        
-    # 3. Guardamos el diccionario completo UNA SOLA VEZ al final 
+
+    # Guardamos todos los encoders una sola vez al salir del bucle
+    if not os.path.exists('output'):
+        os.makedirs('output')
     with open('output/label_encoders.pkl', 'wb') as f:
         pickle.dump(encoders, f)
         
@@ -332,20 +368,7 @@ def preprocesar_datos():
     X_train, X_dev = process_missing_values(X_train, X_dev)
     X_train, X_dev = cat2num(X_train, X_dev)
     X_train, X_dev = process_text(X_train, X_dev)
-    # 1. Ajuste inteligente del escalado
-    tipo_escalado = args.preprocessing.get("scaling", "none")
-    algoritmo = args.algorithm
-    if algoritmo == "naive_bayes":
-        nb_type = args.naive_bayes.get("type", "multinomial")
-        if nb_type != "gaussian":
-            # Forzamos MinMax aunque en el JSON diga Standard
-            tipo_escalado = "minmax" 
-            print(Fore.CYAN + "> Ajuste: Usando MinMax para Naive Bayes." + Fore.RESET)
-
-    elif algoritmo == "kNN" and tipo_escalado == "none":
-        # kNN es inútil sin escalar
-        tipo_escalado = "standard"
-        print(Fore.YELLOW + "> Aviso: kNN requiere escalado. Aplicando Standard." + Fore.RESET)
+   
     X_train, X_dev = reescaler(X_train, X_dev)
     
     return X_train.values, X_dev.values, y_train.values, y_dev.values
@@ -641,7 +664,7 @@ if __name__ == "__main__":
             sys.executable, 
             "test.py", 
             "-f", args.file, 
-            "-c", args.config
+            "-p", args.prediction
         ]
         
         # Ejecutamos el script externo
