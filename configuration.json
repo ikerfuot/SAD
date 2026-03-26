@@ -84,7 +84,7 @@
         ]
     },
     "naive_bayes": {
-        "type": "bernoulli",
+        "type": "gaussian",
         "alpha": [
             0.01,
             0.1,
