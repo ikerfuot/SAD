@@ -155,6 +155,13 @@ def process_missing_values(X_train, X_dev):
             mode_val = X_train[col].mode()[0]
             X_train[col] = X_train[col].fillna(mode_val)
             X_dev[col] = X_dev[col].fillna(mode_val)
+
+    fill_values = {}
+    for col in num_train.columns:
+        fill_values[col] = X_train[col].mean()
+    for col in cat_train.columns:
+        fill_values[col] = X_train[col].mode()[0]
+    pickle.dump(fill_values, open('output/missing_values.pkl', 'wb'))
             
     return X_train, X_dev
 
@@ -186,12 +193,26 @@ def cat2num(X_train, X_dev):
     Convierte categóricas a numéricas. Fit en Train, Transform en Train y Dev.
     """
     cat_cols = select_features(X_train)[2].columns
-    le = LabelEncoder()
+    if len(cat_cols) == 0: return X_train, X_dev
+    encoders = {} 
+    
     for col in cat_cols:
+        le = LabelEncoder()
+        # Ajustamos y transformamos el entrenamiento 
         X_train.loc[:, col] = le.fit_transform(X_train[col].astype(str))
+        
+        # Manejamos etiquetas desconocidas en el dev 
         X_dev.loc[:, col] = X_dev[col].map(lambda s: s if s in le.classes_ else '<unknown>')
         le.classes_ = np.append(le.classes_, '<unknown>')
         X_dev.loc[:, col] = le.transform(X_dev[col].astype(str))
+        
+        # 2. Guardamos el encoder de ESTA columna en el diccionario 
+        encoders[col] = le
+        
+    # 3. Guardamos el diccionario completo UNA SOLA VEZ al final 
+    with open('output/label_encoders.pkl', 'wb') as f:
+        pickle.dump(encoders, f)
+        
     return X_train, X_dev
 
 def simplify_text(data_subset):
@@ -470,16 +491,7 @@ def naive_bayes(x_train, x_dev, y_train, y_dev):
     """
     print(Fore.YELLOW + "\nProcesando Naive Bayes (GridSearchCV)..." + Fore.RESET)
 
-    # --- VALIDACIÓN DE SEGURIDAD ---
-    # MultinomialNB y BernoulliNB no aceptan valores negativos. 
-    # Si detectamos valores < 0, re-escalamos a [0, 1] automáticamente.
-    if (x_train < 0).any():
-        print(Fore.CYAN + "Nota: Detectados valores negativos. Re-escalando a [0, 1] para Naive Bayes..." + Fore.RESET)
-        scaler = MinMaxScaler()
-        x_train = scaler.fit_transform(x_train)
-        x_dev = scaler.transform(x_dev)
-    # -------------------------------
-    
+
     # Intentamos leer args.naive_bayes. Si no existe, devuelve {}
     nb_type = args.naive_bayes.get("type", "multinomial")
     
@@ -511,8 +523,8 @@ def naive_bayes(x_train, x_dev, y_train, y_dev):
     # Guardamos el modelo utilizando pickle
     save_model(gs)
 
-def load_model():
-    """
+"""def load_model():
+    
     Carga el modelo desde el archivo 'output/modelo.pkl' y lo devuelve.
 
     Returns:
@@ -520,7 +532,7 @@ def load_model():
 
     Raises:
         Exception: Si ocurre un error al cargar el modelo.
-    """
+   
     try:
         with open('output/modelo.pkl', 'rb') as file:
             model = pickle.load(file)
@@ -532,7 +544,7 @@ def load_model():
         sys.exit(1)
         
 def predict():
-    """
+    
     Realiza una predicción utilizando el modelo entrenado y guarda los resultados en un archivo CSV.
 
     Parámetros:
@@ -540,14 +552,14 @@ def predict():
 
     Retorna:
         Ninguno
-    """
+    
     global data
     # Predecimos
     prediction = model.predict(data)
     
     # Añadimos la prediccion al dataframe data
     data = pd.concat([data, pd.DataFrame(prediction, columns=[args.prediction])], axis=1)
-    
+    """
 # Función principal
 
 if __name__ == "__main__":
@@ -619,21 +631,26 @@ if __name__ == "__main__":
                 print(Fore.RED+"Algoritmo no soportado"+Fore.RESET)
                 sys.exit(1)
     elif args.mode == "test":
-        # Cargamos el modelo
-        print("\n- Cargando modelo...")
-        model = load_model()
-        # Predecimos
-        print("\n- Prediciendo...")
-        try:
-            predict()
-            print(Fore.GREEN+"Predicción realizada con éxito"+Fore.RESET)
-            # Guardamos el dataframe con la prediccion
-            data.to_csv('output/data-prediction.csv', index=False)
-            print(Fore.GREEN+"Predicción guardada con éxito"+Fore.RESET)
-            sys.exit(0)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
+        # En lugar de tener funciones aquí, delegamos todo al otro script
+        print(Fore.YELLOW + "\n=== DELEGANDO A MÓDULO DE PREDICCIÓN (test.py) ===" + Fore.RESET)
+        
+        import subprocess
+        import sys
+        
+        comando = [
+            sys.executable, 
+            "test.py", 
+            "-f", args.file, 
+            "-c", args.config
+        ]
+        
+        # Ejecutamos el script externo
+        result = subprocess.run(comando)
+        
+        if result.returncode == 0:
+            print(Fore.GREEN + "[OK] El proceso de test ha terminado correctamente.")
+        else:
+            print(Fore.RED + "[ERROR] El módulo test.py devolvió un error.")
     else:
         print(Fore.RED+"Modo no soportado"+Fore.RESET)
         sys.exit(1)
