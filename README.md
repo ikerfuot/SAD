@@ -2,6 +2,47 @@
 
 Sistema modular para el entrenamiento y evaluación de modelos de clasificación. Esta herramienta permite automatizar el preprocesamiento, la búsqueda de hiperparámetros (GridSearch) y la inferencia sobre nuevos datos.
 
+Aquí tienes la guía completa para configurar tu proyecto desde cero, instalar las dependencias y entender la arquitectura del sistema que hemos construido.
+
+---
+
+### 🚀 Configuración del Entorno y Librerías
+Para que este proyecto funcione correctamente, es fundamental contar con la versión adecuada de Python.
+
+**Versión de Python: 3.12**
+#### 1. Crear el entorno virtual
+Abre tu terminal en la carpeta del proyecto y ejecuta:
+#### Crear el entorno (llamado 'venv')
+En terminal: python -m venv venv
+
+En conda: conda create --name venv python=3.12
+#### Activar el entorno:
+En terminal:source venv/bin/activate
+
+En conda: conda activate venv
+#### 2. Descargar las librerías
+Una vez activado el entorno, instalamos todo lo necesario con estos comandos:
+
+En terminal: pip install -r requirements.txt
+En conda:
+
+conda install pip
+
+pip install -r requirements.txt
+
+---
+
+### 📂 Funciones de los Archivos del Proyecto
+
+Cada archivo tiene una responsabilidad única dentro del flujo de Machine Learning.
+
+* **plantilla.py**: Es el motor de entrenamiento que limpia los datos, busca los mejores hiperparámetros y guarda el modelo optimizado en un archivo.
+* **test.py**: Es el script de predicción que utiliza los objetos guardados para transformar datos nuevos y generar resultados sin re-entrenar el modelo.
+* **configuration.json**: Es el centro de control que define las reglas de preprocesamiento y los rangos de búsqueda para los algoritmos sin tocar el código.
+* **requirements.txt**: Es la lista de dependencias necesarias para asegurar que todos los usuarios tengan instaladas las mismas versiones de las librerías.
+
+---
+
 ## 🛠 Uso y Ejecución (Terminal)
 
 La sintaxis principal es:
