@@ -118,6 +118,3 @@ Define las listas de valores que el `GridSearchCV` probará para encontrar la me
 * scaler.pkl / vectorizer.pkl / label_encoders.pkl: Objetos para transformar datos en el test.
 * modelo.csv: Historial de todas las combinaciones probadas y sus resultados.
 * data-prediction.csv: (Solo en modo test) El CSV original con la columna PREDICCION añadida.
-
-
-![alt text](https://pbs.twimg.com/media/HDYSNYTXIAAbeFc.jpg)
