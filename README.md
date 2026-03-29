@@ -1,4 +1,4 @@
-### **SAD**
+# **SAD**
 
 Sistema modular para el entrenamiento y evaluación de modelos de clasificación. Esta herramienta permite automatizar el preprocesamiento, la búsqueda de hiperparámetros (GridSearch) y la inferencia sobre nuevos datos.
 
