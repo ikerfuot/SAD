@@ -7,6 +7,7 @@ import sys
 import os
 import argparse
 from colorama import Fore
+from sklearn.metrics import f1_score, confusion_matrix, classification_report
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
@@ -132,6 +133,7 @@ if __name__ == "__main__":
     # Descargas NLTK
     nltk.download('stopwords', quiet=True)
     nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
 
     if not os.path.exists(args.file):
         print(Fore.RED + f"Error: No se encuentra el archivo {args.file}" + Fore.RESET)
@@ -154,8 +156,25 @@ if __name__ == "__main__":
     print(Fore.CYAN + "Realizando predicciones..." + Fore.RESET)
     predicciones = model_gs.predict(X_test_clean.values)
 
+    # IMPRIMIR RESULTADOS
+    target = args.prediction
+    if target in data_original.columns:
+        print(Fore.MAGENTA + f"\n=== RESULTADOS EN TEST (Target: {target}) ===" + Fore.RESET)
+        y_true = data_original[target]
+        print(Fore.YELLOW + "> F1-score micro:" + Fore.RESET, f1_score(y_true, predicciones, average='micro', zero_division=0))
+        print(Fore.YELLOW + "> F1-score macro:" + Fore.RESET, f1_score(y_true, predicciones, average='macro', zero_division=0))
+        print(Fore.YELLOW + "> Informe de clasificación:\n" + Fore.RESET, classification_report(y_true, predicciones, zero_division=0))
+        
+        print(Fore.YELLOW + "> Matriz de confusión:\n" + Fore.RESET)
+        cm = confusion_matrix(y_true, predicciones)
+        etiquetas = sorted(list(set(y_true)))
+        df_cm = pd.DataFrame(cm, index=[f"Real: {e}" for e in etiquetas], columns=[f"Pred: {e}" for e in etiquetas])
+        print(df_cm)
+    else:
+        print(Fore.YELLOW + "\n[!] El test no contiene la columna objetivo." + Fore.RESET)
+
     # Guardar resultados
     data_original['PREDICCION'] = predicciones
     data_original.to_csv('output/data-prediction.csv', index=False)
     
-    print(Fore.GREEN + "¡Éxito! Predicciones guardadas en 'output/data-prediction.csv'" + Fore.RESET)
+    print(Fore.GREEN + "Predicciones guardadas en 'output/data-prediction.csv'" + Fore.RESET)

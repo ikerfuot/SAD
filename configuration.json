@@ -4,10 +4,9 @@
         "text_process": "tf-idf",
         "language": "english",
         "imbalance_threshold": 20.0,
-        "test_size": 0.15,
-        "dev_size": 0.15,
+        "dev_size": 0.25,
         "unique_category_threshold": 10,
-        "sampling": "smote",
+        "sampling": "none",
         "drop_features": []
     },
     "kNN": {
@@ -81,6 +80,11 @@
         "criterion": [
             "gini",
             "entropy"
+        ],
+        "max_features": [
+            "sqrt",
+            "log2",
+            null
         ]
     },
     "naive_bayes": {

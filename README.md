@@ -1,8 +1,8 @@
+**Python 3.12 | Train: `python train.py -f datos.csv -p target -a algoritmo -v` | Test: `python test.py -f datos_test.csv -p target`**
+
 # **SAD**
 
 Sistema modular para el entrenamiento y evaluación de modelos de clasificación. Esta herramienta permite automatizar el preprocesamiento, la búsqueda de hiperparámetros (GridSearch) y la inferencia sobre nuevos datos.
-
-Aquí tienes la guía completa para configurar tu proyecto desde cero, instalar las dependencias y entender la arquitectura del sistema que hemos construido.
 
 ---
 
@@ -26,6 +26,10 @@ Una vez activado el entorno, instalamos todo lo necesario con estos comandos:
 En terminal: pip install -r requirements.txt
 En conda:
 
+conda install --yes --file requirements.txt
+
+o si no probar con:
+
 conda install pip
 
 pip install -r requirements.txt
@@ -36,23 +40,14 @@ pip install -r requirements.txt
 
 Cada archivo tiene una responsabilidad única dentro del flujo de Machine Learning.
 
-* **plantilla.py**: Es el motor de entrenamiento que limpia los datos, busca los mejores hiperparámetros y guarda el modelo optimizado en un archivo.
+* **train.py**: Es el motor de entrenamiento que limpia los datos, busca los mejores hiperparámetros y guarda el modelo optimizado en un archivo.
 * **test.py**: Es el script de predicción que utiliza los objetos guardados para transformar datos nuevos y generar resultados sin re-entrenar el modelo.
 * **configuration.json**: Es el centro de control que define las reglas de preprocesamiento y los rangos de búsqueda para los algoritmos sin tocar el código.
 * **requirements.txt**: Es la lista de dependencias necesarias para asegurar que todos los usuarios tengan instaladas las mismas versiones de las librerías.
 
 ---
 
-## 🛠 Uso y Ejecución (Terminal)
-
-La sintaxis principal es:
-python plantilla.py -m <MODO> -f <ARCHIVO_CSV> -p <COLUMNA_OBJETIVO> -a <ALGORITMO> [OPCIONES]
-
-
 ### Argumentos Obligatorios:
-* -m, --mode: 
-    * train: Entrena el modelo, busca hiperparámetros y guarda los "artefactos" (.pkl).
-    * test: Realiza predicciones sobre un archivo nuevo usando el modelo guardado.
 * -f, --file: Ruta al archivo .csv.
 * -p, --prediction: Nombre de la columna objetivo (target).
 * -a, --algorithm: Algoritmo a utilizar:
@@ -76,7 +71,7 @@ Controla cómo se limpian y transforman los datos antes de entrar al modelo.
 * **scaling**: Método de escalado numérico. Opciones: "standard", "minmax" o "none".
 * **sampling**: Estrategia para manejar datasets desbalanceados. Opciones: "smote", "oversampling", "undersampling" o "none".
 * **imbalance_threshold**: Porcentaje mínimo de la clase minoritaria (ej: 20.0). Si una clase tiene menos presencia que este valor, se activa el sampling.
-* **test_size**: Proporción del dataset original reservada para la evaluación final (ej: 0.15).
+* **dev_size**: Proporción del dataset original reservada para la evaluación (ej: 0.15).
 * **drop_features**: Lista de nombres de columnas que quieres ignorar por completo (ej: ["id", "name"]).
 * **unique_category_threshold**: Número máximo de valores únicos para que una columna de texto se considere "categórica" (y se use LabelEncoder) en lugar de "texto libre".
 * **language**: Idioma para el procesamiento de texto y eliminación de stopwords (ej: "spanish", "english").
@@ -117,4 +112,8 @@ Define las listas de valores que el `GridSearchCV` probará para encontrar la me
 * modelo.pkl: El modelo ganador.
 * scaler.pkl / vectorizer.pkl / label_encoders.pkl: Objetos para transformar datos en el test.
 * modelo.csv: Historial de todas las combinaciones probadas y sus resultados.
-* data-prediction.csv: (Solo en modo test) El CSV original con la columna PREDICCION añadida.
+* data-prediction.csv: (generado por test.py) El CSV original con la columna PREDICCION añadida.
+
+## Ejemplo
+`python train.py -f penguins.csv -p sex -a random_forest -e f1_macro -v`
+`python test.py -f penguins_test.csv -p sex -v`

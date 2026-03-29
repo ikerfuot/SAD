@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Script para la implementación del algoritmo de clasificación
-"""
-
 import random
 import sys
 import signal
@@ -55,7 +51,7 @@ def parse_args():
     Función para parsear los argumentos de entrada
     """
     parse = argparse.ArgumentParser(description="Practica de algoritmos de clasificación de datos.")
-    parse.add_argument("-m", "--mode", help="Modo de ejecución (train o test)", required=True)
+    parse.add_argument("-m", "--mode", help="Modo de ejecución", default="train")
     parse.add_argument("-f", "--file", help="Fichero csv (/Path_to_file)", required=True)
     parse.add_argument("-a", "--algorithm", help="Algoritmo a ejecutar (kNN, decision_tree o random_forest)", required=True)
     parse.add_argument("-p", "--prediction", help="Columna a predecir (Nombre de la columna)", required=True)
@@ -354,8 +350,8 @@ def preprocesar_datos():
     X = data.drop(columns=[args.prediction])
     y = data[args.prediction]
     
-    test_size = args.preprocessing.get("test_size", 0.25)
-    X_train, X_dev, y_train, y_dev = train_test_split(X, y, test_size=test_size, random_state=42, stratify=y)
+    dev_size = args.preprocessing.get("dev_size", 0.25)
+    X_train, X_dev, y_train, y_dev = train_test_split(X, y, test_size=dev_size, random_state=42, stratify=y)
     
     X_train, X_dev = X_train.copy(), X_dev.copy()
     
@@ -426,7 +422,13 @@ def mostrar_resultados(gs, x_dev, y_dev):
         print(Fore.MAGENTA+"> F1-score micro:\n"+Fore.RESET, calculate_fscore(y_dev, y_pred)[0])
         print(Fore.MAGENTA+"> F1-score macro:\n"+Fore.RESET, calculate_fscore(y_dev, y_pred)[1])
         print(Fore.MAGENTA+"> Informe de clasificación:\n"+Fore.RESET, calculate_classification_report(y_dev, y_pred))
-        print(Fore.MAGENTA+"> Matriz de confusión:\n"+Fore.RESET, calculate_confusion_matrix(y_dev, y_pred))
+        print(Fore.MAGENTA+"> Matriz de confusión:\n"+Fore.RESET)
+        cm = calculate_confusion_matrix(y_dev, y_pred)
+        # Sacamos las clases únicas para ponerlas de cabecera
+        etiquetas = sorted(list(set(y_dev)))
+        df_cm = pd.DataFrame(cm, index=[f"Real: {e}" for e in etiquetas], columns=[f"Pred: {e}" for e in etiquetas])
+        print(df_cm)
+
 
 def kNN(x_train, x_dev, y_train, y_dev):
     """
@@ -610,9 +612,10 @@ if __name__ == "__main__":
 
     # Descargamos los recursos necesarios de nltk
     print("\n- Descargando diccionarios...")
-    nltk.download('stopwords')
-    nltk.download('punkt')
-    nltk.download('wordnet')
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+    nltk.download('punkt', quiet=True)
+    nltk.download('wordnet', quiet=True)
 
     if args.mode == "train":
         # Preprocesamos los datos
