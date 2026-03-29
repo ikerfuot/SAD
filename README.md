@@ -112,7 +112,7 @@ Define las listas de valores que el `GridSearchCV` probará para encontrar la me
 
 ---
 
-## 📂 Salidas (Carpeta `output/`)
+## 📂 Salidas (Carpeta output/)
 
 * modelo.pkl: El modelo ganador.
 * scaler.pkl / vectorizer.pkl / label_encoders.pkl: Objetos para transformar datos en el test.
