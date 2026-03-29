@@ -159,19 +159,33 @@ if __name__ == "__main__":
     # IMPRIMIR RESULTADOS
     target = args.prediction
     if target in data_original.columns:
-        print(Fore.MAGENTA + f"\n=== RESULTADOS EN TEST (Target: {target}) ===" + Fore.RESET)
+        print(Fore.MAGENTA + f"\n=== RESULTADOS EN TEST ===" + Fore.RESET)
+        
         y_true = data_original[target]
-        print(Fore.YELLOW + "> F1-score micro:" + Fore.RESET, f1_score(y_true, predicciones, average='micro', zero_division=0))
-        print(Fore.YELLOW + "> F1-score macro:" + Fore.RESET, f1_score(y_true, predicciones, average='macro', zero_division=0))
-        print(Fore.YELLOW + "> Informe de clasificación:\n" + Fore.RESET, classification_report(y_true, predicciones, zero_division=0))
+        
+        # filtrar filas con valores no nulos en la columna objetivo
+        mascara_validos = y_true.notnull()
+        y_true_eval = y_true[mascara_validos].astype(str)
+        predicciones_eval = predicciones[mascara_validos]
+
+        # para fallo de ValueError: could not convert string to float
+        if hasattr(predicciones_eval, "astype"):
+            predicciones_eval = predicciones_eval.astype(str)
+        else:
+            predicciones_eval = np.array([str(p) for p in predicciones_eval])
+
+        print(Fore.YELLOW + "> F1-score micro:" + Fore.RESET, f1_score(y_true_eval, predicciones_eval, average='micro', zero_division=0))
+        print(Fore.YELLOW + "> F1-score macro:" + Fore.RESET, f1_score(y_true_eval, predicciones_eval, average='macro', zero_division=0))
+        print(Fore.YELLOW + "> Informe de clasificación:\n" + Fore.RESET, classification_report(y_true_eval, predicciones_eval, zero_division=0))
         
         print(Fore.YELLOW + "> Matriz de confusión:\n" + Fore.RESET)
-        cm = confusion_matrix(y_true, predicciones)
-        etiquetas = sorted(list(set(y_true)))
+        cm = confusion_matrix(y_true_eval, predicciones_eval)
+        # Obtenemos etiquetas únicas uniendo las reales y las predichas para que cuadren las columnas
+        etiquetas = sorted(list(set(y_true_eval) | set(predicciones_eval)))
         df_cm = pd.DataFrame(cm, index=[f"Real: {e}" for e in etiquetas], columns=[f"Pred: {e}" for e in etiquetas])
         print(df_cm)
     else:
-        print(Fore.YELLOW + "\n[!] El test no contiene la columna objetivo." + Fore.RESET)
+        print(Fore.YELLOW + "\n[!] No se encontró la columna objetivo. Solo se generarán predicciones." + Fore.RESET)
 
     # Guardar resultados
     data_original['PREDICCION'] = predicciones
