@@ -1,64 +1,82 @@
-# Valverde OUT - SAD
+### **SAD**
 
-Plantilla para entrenamiento y evaluación de modelos de clasificación para la asignatura Sistemas de Apoyo a la Decisión.
+Sistema modular para el entrenamiento y evaluación de modelos de clasificación. Esta herramienta permite automatizar el preprocesamiento, la búsqueda de hiperparámetros (GridSearch) y la inferencia sobre nuevos datos.
 
-El código está estructurado para particionar los datos, preprocesarlos, realizar una búsqueda de hiperparámetros y guardar el modelo para su posterior evaluación.
+## 🛠 Uso y Ejecución (Terminal)
 
-## Instalación y Preparación del Entorno
+La sintaxis principal es:
+python plantilla.py -m <MODO> -f <ARCHIVO_CSV> -p <COLUMNA_OBJETIVO> -a <ALGORITMO> [OPCIONES]
 
-Es más fácil de lo que parece.
 
-1. Crear el entorno virtual:
-   python -m venv venv
+### Argumentos Obligatorios:
+* -m, --mode: 
+    * train: Entrena el modelo, busca hiperparámetros y guarda los "artefactos" (.pkl).
+    * test: Realiza predicciones sobre un archivo nuevo usando el modelo guardado.
+* -f, --file: Ruta al archivo .csv.
+* -p, --prediction: Nombre de la columna objetivo (target).
+* -a, --algorithm: Algoritmo a utilizar:
+    * kNN: Vecinos más cercanos.
+    * decision_tree: Árbol de decisión.
+    * random_forest: Bosque aleatorio.
+    * naive_bayes: Prueba automáticamente Gaussian, Multinomial y Bernoulli.
 
-2. Activar el entorno:
-   source venv/bin/activate
+### Opciones Adicionales:
+* -v, --verbose: Muestra mejores parámetros, F1-Score (micro/macro), Informe de clasificación y Matriz de confusión.
+* -e, --estimator: Métrica para el GridSearch (f1_micro, f1_macro, accuracy, precision, recall).
+* -c, --cpu: Número de núcleos a usar en el entrenamiento (default: -1, todos).
 
-3. Instalar dependencias:
-   pip install -r requirements.txt
+## ⚙️ Configuración (configuration.json)
 
-## Configuración (configuration.json)
+El archivo JSON controla el comportamiento del preprocesamiento y los rangos de búsqueda de los modelos.
 
-Todos los hiperparámetros de los modelos y las reglas de preprocesado se controlan desde el archivo configuration.json. El script lee este archivo automáticamente. 
+### 1. Bloque de Preprocesamiento (preprocessing)
+Controla cómo se limpian y transforman los datos antes de entrar al modelo.
 
-## Uso y Ejecución
-
-El script funciona mediante argumentos por línea de comandos. La sintaxis básica es:
-
-python plantilla_decisionTrees.py -m <MODO> -f <ARCHIVO_CSV> -p <COLUMNA_OBJETIVO> -a <ALGORITMO>
-
-### Argumentos disponibles:
-- -m, --mode: Modo de ejecución. Puede ser train (entrenamiento y validación) o test (evaluación ciega final). (Obligatorio)
-- -f, --file: Ruta al fichero .csv con los datos. (Obligatorio)
-- -p, --prediction: Nombre de la columna objetivo (Target) que se quiere predecir. (Obligatorio)
-- -a, --algorithm: Algoritmo a ejecutar. Opciones válidas: kNN, decision_tree, random_forest. (Obligatorio)
-- -e, --estimator: Métrica para elegir el mejor modelo (por defecto accuracy).
-- -c, --cpu: Número de CPUs a utilizar para el GridSearch (por defecto -1, usa todos los núcleos).
-- -v, --verbose: Muestra por terminal las métricas detalladas (Mejores parámetros, F1-score, Matriz de confusión).
-- --debug: Muestra información adicional sobre cómo se han separado las columnas (numéricas, categóricas, texto) durante el preprocesado.
+* **scaling**: Método de escalado numérico. Opciones: "standard", "minmax" o "none".
+* **sampling**: Estrategia para manejar datasets desbalanceados. Opciones: "smote", "oversampling", "undersampling" o "none".
+* **imbalance_threshold**: Porcentaje mínimo de la clase minoritaria (ej: 20.0). Si una clase tiene menos presencia que este valor, se activa el sampling.
+* **test_size**: Proporción del dataset original reservada para la evaluación final (ej: 0.15).
+* **drop_features**: Lista de nombres de columnas que quieres ignorar por completo (ej: ["id", "name"]).
+* **unique_category_threshold**: Número máximo de valores únicos para que una columna de texto se considere "categórica" (y se use LabelEncoder) en lugar de "texto libre".
+* **language**: Idioma para el procesamiento de texto y eliminación de stopwords (ej: "spanish", "english").
+* **text_process**: Técnica de vectorización para columnas de texto. Opciones: "tf-idf", "bow" (Bag of Words) o "none".
 
 ---
 
-### Ejemplo 1: Fase de Entrenamiento (train)
+### 2. Configuración de Algoritmos (Hiperparámetros)
+Define las listas de valores que el `GridSearchCV` probará para encontrar la mejor combinación.
 
-En este modo, el sistema lee el CSV, lo divide en Train y Dev (Validación), balancea solo el Train si es necesario, busca los mejores hiperparámetros y guarda el modelo ganador.
+#### **kNN (K-Nearest Neighbors)**
+* **n_neighbors**: Lista de números de vecinos a probar (ej: [1, 3, 5, 11]).
+* **weights**: Función de peso. Opciones: ["uniform", "distance"].
+* **p**: Métrica de distancia. 1 para Manhattan, 2 para Euclídea.
 
-python plantilla.py -m train -f penguins.csv -p sex -a kNN -v
+#### **Decision Tree**
+* **criterion**: Función para medir la calidad de la división. Opciones: ["gini", "entropy"].
+* **max_depth**: Profundidad máxima del árbol. Usar null para profundidad ilimitada.
+* **min_samples_split**: Número mínimo de muestras necesarias para dividir un nodo.
+* **min_samples_leaf**: Número mínimo de muestras que debe tener un nodo hoja.
+* **ccp_alpha**: Parámetro de complejidad para la poda (pruning) del árbol.
 
-### Ejemplo 2: Fase de Evaluación Definitiva (test)
+#### **Random Forest**
+* **n_estimators**: Número de árboles en el bosque (ej: [50, 100, 200]).
+* **criterion**: Calidad de la división (igual que en Decision Tree).
+* **max_features**: Número de características a considerar en cada división. Opciones: ["sqrt", "log2"].
 
-El script no divide ni entrena nada; simplemente carga el modelo previamente guardado, preprocesa el nuevo archivo e imprime las predicciones.
+#### **Naive Bayes**
+* **type**: Escoge el modo en el que se va a ejecutar Naive Bayes. Opciones (solo se puede usar una de ellas): "gaussian", "multinomial", "bernoulli".
+* **var_smoothing**: (Para Gaussian) Porción de la varianza máxima añadida para estabilidad (ej: [1e-9, 1e-8]).
+* **alpha**: (Para Multinomial/Bernoulli) Parámetro de suavizado Laplace/Lidstone.
+* **binarize**: (Solo para Bernoulli) Umbral para binarizar características.
 
-python plantilla.py -m test -f penguins_test_secreto.csv -p sex -a kNN
+---
 
-## Archivos de Salida
+## 📂 Salidas (Carpeta `output/`)
 
-Tras la ejecución, el script generará automáticamente una carpeta llamada output/ donde se guardarán:
-- modelo.pkl: El modelo entrenado ganador (incluye el pipeline del GridSearch).
-- scaler.pkl: El objeto instanciado para el escalado de datos numéricos.
-- vectorizer.pkl: El objeto instanciado (TF-IDF/BOW) para los datos de texto.
-- modelo.csv: Un registro de todos los parámetros probados por el GridSearch y su puntuación.
-- data-prediction.csv: Generado solo en modo test, contiene el dataset original con una columna añadida al final con las predicciones del modelo.
+* modelo.pkl: El modelo ganador.
+* scaler.pkl / vectorizer.pkl / label_encoders.pkl: Objetos para transformar datos en el test.
+* modelo.csv: Historial de todas las combinaciones probadas y sus resultados.
+* data-prediction.csv: (Solo en modo test) El CSV original con la columna PREDICCION añadida.
 
 
 ![alt text](https://pbs.twimg.com/media/HDYSNYTXIAAbeFc.jpg)
